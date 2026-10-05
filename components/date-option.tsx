@@ -21,14 +21,7 @@ export function DateOption({ day, disabled, onSelect }: Props) {
         className="absolute inset-0 bg-[radial-gradient(120%_120%_at_100%_50%,rgba(178,58,76,0.07),transparent_60%)] opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-active:opacity-100"
       />
       <span className="relative flex flex-col">
-        <span className="flex items-center gap-2 text-[21px] font-semibold tracking-tight">
-          {day.label}
-          {day.isToday && !disabled && (
-            <span className="rounded-full bg-rose-soft px-2 py-0.5 text-[10px] font-semibold tracking-[0.12em] text-rose uppercase">
-              cesur seçim
-            </span>
-          )}
-        </span>
+        <span className="text-[21px] font-semibold tracking-tight">{day.label}</span>
         <span className="mt-0.5 text-sm text-muted">
           {disabled ? "Bugün için biraz geç oldu" : day.dateText}
         </span>

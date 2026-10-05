@@ -1,14 +1,16 @@
+import { Fragment } from "react";
 import { RotateCcw, Send, Sparkles } from "lucide-react";
-import { buildWhatsAppUrl, type DayOption, type TimeSlot } from "@/lib/dates";
+import { buildWhatsAppUrl, type Activity, type DayOption, type TimeSlot } from "@/lib/dates";
 import { Confetti } from "./confetti";
 
 type Props = {
   day: DayOption;
+  activity: Activity;
   time: TimeSlot;
   onChangeMind: () => void;
 };
 
-export function SuccessStep({ day, time, onChangeMind }: Props) {
+export function SuccessStep({ day, activity, time, onChangeMind }: Props) {
   return (
     <section className="flex flex-1 flex-col" aria-labelledby="success-title" aria-live="polite">
       <Confetti />
@@ -23,8 +25,14 @@ export function SuccessStep({ day, time, onChangeMind }: Props) {
         </h1>
 
         <div className="mt-8 w-full rounded-[32px] border border-line bg-paper px-6 py-9 shadow-[0_1px_2px_rgba(29,27,25,0.04),0_24px_60px_-28px_rgba(80,40,30,0.3)]">
-          <p className="font-serif text-[clamp(36px,12.4vw,60px)] leading-none tracking-[-0.02em] whitespace-nowrap">
-            {day.shortText} <span className="text-rose">·</span> <span className="tabular-nums">{time}</span>
+          {/* Segments never break internally; lines may only wrap after a separator dot. */}
+          <p className="font-serif text-[clamp(30px,10vw,50px)] leading-[1.08] tracking-[-0.02em] text-balance">
+            {[day.shortText, activity.label, time].map((part, i) => (
+              <Fragment key={part}>
+                {i > 0 && <span className="text-rose">&nbsp;· </span>}
+                <span className="whitespace-nowrap tabular-nums">{part}</span>
+              </Fragment>
+            ))}
           </p>
           <p className="mt-3 text-sm text-muted">{day.dateText}</p>
         </div>
@@ -33,7 +41,7 @@ export function SuccessStep({ day, time, onChangeMind }: Props) {
 
         <div className="mt-auto flex w-full flex-col items-center gap-2 pt-10">
           <a
-            href={buildWhatsAppUrl(day, time)}
+            href={buildWhatsAppUrl(day, activity, time)}
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Seçimini WhatsApp ile bana gönder"

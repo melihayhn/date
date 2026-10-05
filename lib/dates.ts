@@ -55,9 +55,17 @@ export function isSlotAvailable(slot: TimeSlot, day: DayOption, now: Date) {
   return slotMinutes - nowMinutes >= 30;
 }
 
-export function buildWhatsAppUrl(day: DayOption, time: TimeSlot) {
+export const ACTIVITIES = [
+  { id: "coffee", label: "Kahve", description: "Sakin, rahat, bol sohbet." },
+  { id: "dinner", label: "Yemek", description: "Güzel bir masa, uzun bir akşam." },
+  { id: "walk", label: "Biraz gezelim", description: "Yürürüz, bir şeyler keşfederiz." },
+  { id: "surprise", label: "Bana bırak", description: "Sürpriz plan. Detayları ben hallederim." },
+] as const;
+export type Activity = (typeof ACTIVITIES)[number];
+
+export function buildWhatsAppUrl(day: DayOption, activity: Activity, time: TimeSlot) {
   const dayWord = day.isToday ? "bugün" : day.shortText;
-  const text = `First date için ${dayWord} ${time} seçtim :)`;
+  const text = `First date için ${dayWord}, ${activity.label} ve ${time} seçtim :)`;
   const phone = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER?.replace(/\D/g, "") ?? "";
   return `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
 }

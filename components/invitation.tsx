@@ -1,13 +1,17 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
-import { getDayOptions, type DayOption, type TimeSlot } from "@/lib/dates";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { getDayOptions, type Activity, type DayOption, type TimeSlot } from "@/lib/dates";
 import { useNow } from "@/lib/use-now";
+import { ActivityStep } from "./activity-step";
 import { IntroStep } from "./intro-step";
 import { TimeStep } from "./time-step";
 import { SuccessStep } from "./success-step";
 
-type Step = "intro" | "time" | "success";
+type Step = "intro" | "activity" | "time" | "success";
+
+// Lets the selected state register before the screen changes.
+const SELECT_DELAY = 240;
 
 const haptic = () => {
   if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate(8);
@@ -20,9 +24,13 @@ export function Invitation() {
   const days = useMemo(() => (dayKey === null ? null : getDayOptions(new Date(dayKey))), [dayKey]);
 
   const [step, setStep] = useState<Step>("intro");
-  const [day, setDay] = useState<DayOption | null>(null);
-  const [time, setTime] = useState<TimeSlot | null>(null);
+  const [selectedDate, setSelectedDate] = useState<DayOption | null>(null);
+  const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
+  const [selectedTime, setSelectedTime] = useState<TimeSlot | null>(null);
   const scrollRef = useRef<HTMLElement>(null);
+  const transitionRef = useRef<number | undefined>(undefined);
+
+  useEffect(() => () => window.clearTimeout(transitionRef.current), []);
 
   const goTo = (next: Step) => {
     setStep(next);
@@ -32,25 +40,34 @@ export function Invitation() {
 
   const selectDay = (option: DayOption) => {
     haptic();
-    if (option.id !== day?.id) setTime(null);
-    setDay(option);
-    goTo("time");
+    // Time availability depends on the day, so a new day clears the time.
+    if (option.id !== selectedDate?.id) setSelectedTime(null);
+    setSelectedDate(option);
+    goTo("activity");
+  };
+
+  const selectActivity = (option: Activity) => {
+    haptic();
+    setSelectedActivity(option);
+    window.clearTimeout(transitionRef.current);
+    transitionRef.current = window.setTimeout(() => goTo("time"), SELECT_DELAY);
   };
 
   const selectTime = (slot: TimeSlot) => {
     haptic();
-    setTime(slot);
+    setSelectedTime(slot);
   };
 
   const confirm = () => {
-    if (!day || !time) return;
+    if (!selectedDate || !selectedActivity || !selectedTime) return;
     haptic();
     goTo("success");
   };
 
   const restart = () => {
-    setDay(null);
-    setTime(null);
+    setSelectedDate(null);
+    setSelectedActivity(null);
+    setSelectedTime(null);
     goTo("intro");
   };
 
@@ -65,18 +82,34 @@ export function Invitation() {
         <div className="flex flex-1 flex-col px-6 pt-[max(env(safe-area-inset-top),28px)] pb-[max(env(safe-area-inset-bottom),20px)] sm:px-8 sm:pt-10">
           <div key={step} className="flex flex-1 flex-col">
             {step === "intro" && <IntroStep days={days} now={now} onSelect={selectDay} />}
-            {step === "time" && day && (
+            {step === "activity" && selectedDate && (
+              <ActivityStep
+                activity={selectedActivity}
+                onSelect={selectActivity}
+                onBack={() => {
+                  window.clearTimeout(transitionRef.current);
+                  goTo("intro");
+                }}
+              />
+            )}
+            {step === "time" && selectedDate && selectedActivity && (
               <TimeStep
-                day={day}
+                day={selectedDate}
+                activity={selectedActivity}
                 now={now}
-                time={time}
+                time={selectedTime}
                 onSelectTime={selectTime}
-                onBack={() => goTo("intro")}
+                onBack={() => goTo("activity")}
                 onConfirm={confirm}
               />
             )}
-            {step === "success" && day && time && (
-              <SuccessStep day={day} time={time} onChangeMind={restart} />
+            {step === "success" && selectedDate && selectedActivity && selectedTime && (
+              <SuccessStep
+                day={selectedDate}
+                activity={selectedActivity}
+                time={selectedTime}
+                onChangeMind={restart}
+              />
             )}
           </div>
 

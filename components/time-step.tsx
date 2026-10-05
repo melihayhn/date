@@ -1,9 +1,10 @@
 import { ArrowRight, ChevronLeft } from "lucide-react";
-import { isSlotAvailable, TIME_SLOTS, type DayOption, type TimeSlot } from "@/lib/dates";
+import { isSlotAvailable, TIME_SLOTS, type Activity, type DayOption, type TimeSlot } from "@/lib/dates";
 import { TimeOption } from "./time-option";
 
 type Props = {
   day: DayOption;
+  activity: Activity;
   now: Date | null;
   time: TimeSlot | null;
   onSelectTime: (time: TimeSlot) => void;
@@ -11,14 +12,14 @@ type Props = {
   onConfirm: () => void;
 };
 
-export function TimeStep({ day, now, time, onSelectTime, onBack, onConfirm }: Props) {
+export function TimeStep({ day, activity, now, time, onSelectTime, onBack, onConfirm }: Props) {
   return (
     <section className="stagger flex flex-1 flex-col" aria-labelledby="time-title">
       <div className="-ml-2 flex">
         <button
           type="button"
           onClick={onBack}
-          aria-label="Gün seçimine dön"
+          aria-label="Plan seçimine dön"
           className="grid size-11 place-items-center rounded-full text-ink/70 transition-colors hover:bg-ink/5 hover:text-ink active:scale-95"
         >
           <ChevronLeft className="size-6" aria-hidden />
@@ -33,7 +34,7 @@ export function TimeStep({ day, now, time, onSelectTime, onBack, onConfirm }: Pr
       </h1>
 
       <p className="mt-4 inline-flex w-fit items-center rounded-full border border-line bg-paper px-4 py-2 text-[15px] font-medium shadow-[0_1px_2px_rgba(29,27,25,0.04)]">
-        {day.longText} ✨
+        {day.shortText} <span className="mx-1.5 text-rose">·</span> {activity.label} ✨
       </p>
 
       <h2 className="mt-[clamp(32px,7dvh,56px)] text-[19px] font-semibold tracking-tight">
