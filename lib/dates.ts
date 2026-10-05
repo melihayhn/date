@@ -1,58 +1,52 @@
 export type DayOption = {
   /** Stable id, e.g. "2026-10-06" */
   id: string;
-  /** Card title: "Bugün" or the weekday name ("Salı") */
-  label: string;
-  /** Card subtitle: "6 Ekim Salı" */
+  /** "6 Ekim Salı" */
   dateText: string;
-  /** Short display: "Salı, 6 Ekim" */
-  longText: string;
-  /** Word used in the final screen / message: "Bugün" or "Salı" */
+  /** Word used on the time/final screens: "Bugün", "Yarın", "Salı" or "12 Ekim" */
   shortText: string;
   isToday: boolean;
 };
 
 const LOCALE = "tr-TR";
+const DAY_MS = 86_400_000;
 
 const capitalize = (value: string) =>
   value.charAt(0).toLocaleUpperCase(LOCALE) + value.slice(1);
 
-const toId = (date: Date) =>
+export const startOfDay = (date: Date) =>
+  new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+export const toDayId = (date: Date) =>
   [
     date.getFullYear(),
     String(date.getMonth() + 1).padStart(2, "0"),
     String(date.getDate()).padStart(2, "0"),
   ].join("-");
 
-/** Today plus the next two days (on a Monday: Bugün, Salı, Çarşamba). */
-export function getDayOptions(now: Date, count = 3): DayOption[] {
-  return Array.from({ length: count }, (_, offset) => {
-    const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() + offset);
-    const weekday = capitalize(date.toLocaleDateString(LOCALE, { weekday: "long" }));
-    const dayMonth = date.toLocaleDateString(LOCALE, { day: "numeric", month: "long" });
-    const isToday = offset === 0;
+export function getDayOption(date: Date, today: Date): DayOption {
+  const day = startOfDay(date);
+  const offset = Math.round((day.getTime() - startOfDay(today).getTime()) / DAY_MS);
+  const weekday = capitalize(day.toLocaleDateString(LOCALE, { weekday: "long" }));
+  const dayMonth = day.toLocaleDateString(LOCALE, { day: "numeric", month: "long" });
 
-    return {
-      id: toId(date),
-      label: isToday ? "Bugün" : weekday,
-      dateText: `${dayMonth} ${weekday}`,
-      longText: `${weekday}, ${dayMonth}`,
-      shortText: isToday ? "Bugün" : weekday,
-      isToday,
-    };
-  });
+  // Weekday names are only unambiguous within the coming week.
+  const shortText =
+    offset === 0 ? "Bugün" : offset === 1 ? "Yarın" : offset < 7 ? weekday : dayMonth;
+
+  return { id: toDayId(day), dateText: `${dayMonth} ${weekday}`, shortText, isToday: offset === 0 };
 }
 
-export const TIME_SLOTS = ["18:00", "19:00", "20:00", "21:00"] as const;
-export type TimeSlot = (typeof TIME_SLOTS)[number];
+/** Quick picks; any other time can be chosen with the native picker. */
+export const TIME_SLOTS = ["19:00", "19:30", "20:00", "20:30", "21:00", "21:30"] as const;
+/** "HH:MM" */
+export type TimeSlot = string;
 
-/** A slot is still available today if it starts at least 30 minutes from now. */
+/** Today, a time is unavailable once it has been reached. */
 export function isSlotAvailable(slot: TimeSlot, day: DayOption, now: Date) {
   if (!day.isToday) return true;
   const [hours, minutes] = slot.split(":").map(Number);
-  const slotMinutes = hours * 60 + minutes;
-  const nowMinutes = now.getHours() * 60 + now.getMinutes();
-  return slotMinutes - nowMinutes >= 30;
+  return hours * 60 + minutes > now.getHours() * 60 + now.getMinutes();
 }
 
 export const ACTIVITIES = [
@@ -64,7 +58,9 @@ export const ACTIVITIES = [
 export type Activity = (typeof ACTIVITIES)[number];
 
 export function buildWhatsAppUrl(day: DayOption, activity: Activity, time: TimeSlot) {
-  const dayWord = day.isToday ? "bugün" : day.shortText;
+  // "bugün" / "yarın" read better lowercase mid-sentence; names and dates stay as-is.
+  const relative = day.shortText === "Bugün" || day.shortText === "Yarın";
+  const dayWord = relative ? day.shortText.toLocaleLowerCase(LOCALE) : day.shortText;
   const text = `First date için ${dayWord}, ${activity.label} ve ${time} seçtim :)`;
   const phone = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER?.replace(/\D/g, "") ?? "";
   return `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;

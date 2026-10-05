@@ -13,9 +13,10 @@ npm run dev
 
 ## Akış
 
-1. **Gün** — Bugün + sonraki iki gün, tarayıcıdaki tarihe göre dinamik (Pazartesi açılırsa: Bugün, Salı, Çarşamba). Bugün için saatlerin hepsi geçtiyse "Bugün" kartı pasif olur.
-2. **Saat** — 18:00 / 19:00 / 20:00 / 21:00. Bugün seçildiyse 30 dakikadan az kalmış saatler pasif olur.
-3. **Onay** — Konfeti, seçilen gün · saat ve WhatsApp ile "Bana gönder" butonu.
+1. **Gün** — Takvimden istenen herhangi bir gün (geçmiş günler pasif, ileri aylara sınırsız gidilir).
+2. **Plan** — Kahve / Yemek / Biraz gezelim / Bana bırak.
+3. **Saat** — 19:00–21:30 hızlı seçenekler + "Başka bir saat seç" ile istenen herhangi bir saat. Bugün için saati gelmiş/geçmiş saatler seçilemez.
+4. **Onay** — Konfeti, gün · plan · saat ve WhatsApp ile "Bana gönder" butonu.
 
 ## Ortam değişkenleri (opsiyonel)
 

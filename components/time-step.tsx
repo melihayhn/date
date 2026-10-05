@@ -1,4 +1,4 @@
-import { ArrowRight, ChevronLeft } from "lucide-react";
+import { ArrowRight, ChevronLeft, Clock } from "lucide-react";
 import { isSlotAvailable, TIME_SLOTS, type Activity, type DayOption, type TimeSlot } from "@/lib/dates";
 import { TimeOption } from "./time-option";
 
@@ -13,6 +13,10 @@ type Props = {
 };
 
 export function TimeStep({ day, activity, now, time, onSelectTime, onBack, onConfirm }: Props) {
+  // A time picked for today may already have passed (or pass while the page is open).
+  const selected = time && (!now || isSlotAvailable(time, day, now)) ? time : null;
+  const isCustom = time !== null && !(TIME_SLOTS as readonly string[]).includes(time);
+
   return (
     <section className="stagger flex flex-1 flex-col" aria-labelledby="time-title">
       <div className="-ml-2 flex">
@@ -46,20 +50,52 @@ export function TimeStep({ day, activity, now, time, onSelectTime, onBack, onCon
           <TimeOption
             key={slot}
             time={slot}
-            selected={slot === time}
+            selected={slot === selected}
             disabled={now ? !isSlotAvailable(slot, day, now) : false}
             onSelect={onSelectTime}
           />
         ))}
+
+        <label
+          className={`group relative col-span-2 flex h-16 cursor-pointer items-center justify-center gap-2 rounded-[22px] border text-[17px] font-semibold tracking-tight transition-all duration-300 ease-out-soft active:scale-[0.98] ${
+            isCustom
+              ? "border-ink bg-ink text-paper shadow-[0_14px_30px_-14px_rgba(29,27,25,0.55)]"
+              : "border-dashed border-ink/20 bg-paper/60 text-ink/80 hover:border-rose/40 hover:text-ink"
+          }`}
+        >
+          <Clock className="size-[18px]" aria-hidden />
+          {isCustom ? <span className="tabular-nums">{time}</span> : "Başka bir saat seç"}
+          <input
+            type="time"
+            step={300}
+            value={isCustom ? time : ""}
+            onChange={(event) => event.target.value && onSelectTime(event.target.value)}
+            onClick={(event) => {
+              try {
+                event.currentTarget.showPicker();
+              } catch {
+                // Older browsers open the picker on focus instead.
+              }
+            }}
+            aria-label="Başka bir saat seç"
+            className="absolute inset-0 size-full cursor-pointer appearance-none text-base opacity-0"
+          />
+        </label>
       </div>
+
+      {time && !selected && (
+        <p className="mt-3 text-sm text-rose" role="alert">
+          Bu saat geçti, biraz daha ileri bir saat seç.
+        </p>
+      )}
 
       <div className="mt-auto pt-10">
         <button
           type="button"
           onClick={onConfirm}
-          disabled={!time}
+          disabled={!selected}
           className={`group flex h-16 w-full items-center justify-center gap-2 rounded-full text-[17px] font-semibold transition-all duration-500 ease-out-soft active:scale-[0.98] active:duration-100 ${
-            time
+            selected
               ? "bg-rose text-white shadow-[0_18px_40px_-14px_rgba(178,58,76,0.65)] hover:bg-rose-deep"
               : "cursor-not-allowed bg-ink/[0.06] text-muted"
           }`}
@@ -67,7 +103,7 @@ export function TimeStep({ day, activity, now, time, onSelectTime, onBack, onCon
           Date&apos;i kesinleştir
           <ArrowRight
             className={`size-[18px] transition-all duration-500 ease-out-soft ${
-              time ? "translate-x-0 opacity-100 group-hover:translate-x-1" : "-translate-x-2 opacity-0"
+              selected ? "translate-x-0 opacity-100 group-hover:translate-x-1" : "-translate-x-2 opacity-0"
             }`}
             aria-hidden
           />

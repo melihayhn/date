@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { getDayOptions, type Activity, type DayOption, type TimeSlot } from "@/lib/dates";
+import { useEffect, useRef, useState } from "react";
+import { getDayOption, type Activity, type DayOption, type TimeSlot } from "@/lib/dates";
 import { useNow } from "@/lib/use-now";
 import { ActivityStep } from "./activity-step";
 import { IntroStep } from "./intro-step";
@@ -19,9 +19,6 @@ const haptic = () => {
 
 export function Invitation() {
   const now = useNow();
-  // Local midnight as a number, so day options only rebuild when the date changes.
-  const dayKey = now ? new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() : null;
-  const days = useMemo(() => (dayKey === null ? null : getDayOptions(new Date(dayKey))), [dayKey]);
 
   const [step, setStep] = useState<Step>("intro");
   const [selectedDate, setSelectedDate] = useState<DayOption | null>(null);
@@ -38,19 +35,24 @@ export function Invitation() {
     scrollRef.current?.scrollTo({ top: 0 });
   };
 
-  const selectDay = (option: DayOption) => {
+  const advanceTo = (next: Step) => {
+    window.clearTimeout(transitionRef.current);
+    transitionRef.current = window.setTimeout(() => goTo(next), SELECT_DELAY);
+  };
+
+  const selectDay = (date: Date) => {
+    const option = getDayOption(date, now ?? new Date());
     haptic();
     // Time availability depends on the day, so a new day clears the time.
     if (option.id !== selectedDate?.id) setSelectedTime(null);
     setSelectedDate(option);
-    goTo("activity");
+    advanceTo("activity");
   };
 
   const selectActivity = (option: Activity) => {
     haptic();
     setSelectedActivity(option);
-    window.clearTimeout(transitionRef.current);
-    transitionRef.current = window.setTimeout(() => goTo("time"), SELECT_DELAY);
+    advanceTo("time");
   };
 
   const selectTime = (slot: TimeSlot) => {
@@ -81,7 +83,9 @@ export function Invitation() {
       >
         <div className="flex flex-1 flex-col px-6 pt-[max(env(safe-area-inset-top),28px)] pb-[max(env(safe-area-inset-bottom),20px)] sm:px-8 sm:pt-10">
           <div key={step} className="flex flex-1 flex-col">
-            {step === "intro" && <IntroStep days={days} now={now} onSelect={selectDay} />}
+            {step === "intro" && (
+              <IntroStep now={now} selectedId={selectedDate?.id ?? null} onSelect={selectDay} />
+            )}
             {step === "activity" && selectedDate && (
               <ActivityStep
                 activity={selectedActivity}
